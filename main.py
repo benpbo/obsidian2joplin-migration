@@ -1,7 +1,8 @@
 import re
-from joppy.api import Api
+import os
+from requests.exceptions import HTTPError
 
-TOKEN = '2ac144116f437c87f2973dd6d727cbc7e313d6109061ce2b7472eba7898d113d507440f52260a223da12c82f22b2f1e64e316dc5fe074a691c4b41476c277c66'
+from joppy.api import Api
 
 regex = re.compile(r'\[\[(.+)\]\]')
 
@@ -30,7 +31,18 @@ def main(api: Api):
             body=regex.sub(get_link_markdown, note.body)
         )
 
-
 if __name__ == '__main__':
-    api = Api(token=TOKEN)
-    main(api)
+    token = os.getenv("API_TOKEN")
+    if not token:
+        print('Please provide an API token using the API_TOKEN environment variable')
+        exit(1)
+
+    api = Api(token=token)
+
+    try:
+        main(api)
+    except HTTPError as error:
+        if error.response.status_code == 403:
+            print('API token is wrong')
+        else:
+            raise error
